@@ -1,0 +1,239 @@
+-- ========================================
+-- OLTP DDL for MySQL (InnoDB, utf8mb4)
+-- Tables: customers, products, product_bundles, bundle_items,
+--         product_price_history, orders, order_items, payments,
+--         shipments, returns, sessions, order_sessions
+-- ========================================
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+--------------------------------------------------
+-- customers
+--------------------------------------------------
+DROP TABLE IF EXISTS customers;
+CREATE TABLE customers (
+  customer_id BIGINT NOT NULL PRIMARY KEY,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  email VARCHAR(255),
+  phone VARCHAR(64),                -- raw/noisy phone formats
+  phone_norm VARCHAR(32),           -- (optional) normalized phone
+  city VARCHAR(100),
+  state VARCHAR(100),
+  signup_date DATE,
+  is_active TINYINT(1) DEFAULT 1,
+  external_id VARCHAR(200),         -- external system id
+  guest_flag TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (email),
+  INDEX (phone),
+  INDEX (signup_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--------------------------------------------------
+-- products
+--------------------------------------------------
+DROP TABLE IF EXISTS products;
+CREATE TABLE products (
+  product_id BIGINT NOT NULL PRIMARY KEY,
+  product_name VARCHAR(400),
+  product_category_raw VARCHAR(255), -- noisy raw category
+  product_category VARCHAR(128),     -- mapped canonical category
+  list_price DECIMAL(12,2),
+  cost_price DECIMAL(12,2),
+  is_active TINYINT(1) DEFAULT 1,
+  created_at DATE,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (product_category),
+  INDEX (is_active),
+  INDEX (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--------------------------------------------------
+-- product_bundles
+--------------------------------------------------
+DROP TABLE IF EXISTS product_bundles;
+CREATE TABLE product_bundles (
+  bundle_id BIGINT NOT NULL PRIMARY KEY,
+  bundle_name VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- bundle_items (bundle -> product many-to-many)
+--------------------------------------------------
+DROP TABLE IF EXISTS bundle_items;
+CREATE TABLE bundle_items (
+  bundle_item_id BIGINT NOT NULL PRIMARY KEY,
+  bundle_id BIGINT NOT NULL,
+  product_id BIGINT NOT NULL,
+  quantity INT DEFAULT 1,
+  bundle_price DECIMAL(12,2),
+  INDEX (bundle_id),
+  INDEX (product_id),
+  CONSTRAINT fk_bundle_items_bundle FOREIGN KEY (bundle_id) REFERENCES product_bundles(bundle_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_bundle_items_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- product_price_history (time-variant product prices)
+--------------------------------------------------
+DROP TABLE IF EXISTS product_price_history;
+CREATE TABLE product_price_history (
+  id BIGINT NOT NULL PRIMARY KEY,
+  product_id BIGINT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  list_price DECIMAL(12,2) NOT NULL,
+  promotion_id VARCHAR(200),
+  INDEX (product_id),
+  INDEX (start_date),
+  INDEX (end_date),
+  CONSTRAINT fk_price_history_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- orders
+--------------------------------------------------
+DROP TABLE IF EXISTS orders;
+CREATE TABLE orders (
+  order_id BIGINT NOT NULL PRIMARY KEY,
+  customer_id BIGINT,
+  order_date DATE,
+  status VARCHAR(40),                -- NEW, PROCESSING, COMPLETED, CANCELLED, RETURNED
+  order_placed_at DATETIME,
+  payment_initiated_at DATETIME,
+  payment_completed_at DATETIME,
+  shipped_at DATETIME,
+  delivered_at DATETIME,
+  channel VARCHAR(64),               -- web, mobile_app, affiliate, phone, store
+  user_agent TEXT,
+  device_type VARCHAR(32),           -- desktop, mobile, tablet, bot
+  utm_source VARCHAR(128),
+  coupon_code VARCHAR(128),
+  applied_promo_id VARCHAR(200),
+  order_value DECIMAL(14,2),         -- aggregated sum of order_items.line_total
+  num_items INT,
+  ship_address_id BIGINT,
+  bill_address_id BIGINT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (customer_id),
+  INDEX (order_date),
+  INDEX (status),
+  INDEX (channel),
+  CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--------------------------------------------------
+-- order_items
+--------------------------------------------------
+DROP TABLE IF EXISTS order_items;
+CREATE TABLE order_items (
+  order_item_id BIGINT NOT NULL PRIMARY KEY,
+  order_id BIGINT NOT NULL,
+  product_id BIGINT NOT NULL,
+  quantity INT DEFAULT 1,
+  unit_price DECIMAL(12,2),
+  line_total DECIMAL(14,2),
+  is_bundle_item TINYINT(1) DEFAULT 0,   -- 1 if this row represents a bundle as item
+  bundle_id BIGINT NULL,
+  INDEX (order_id),
+  INDEX (product_id),
+  CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT fk_order_items_bundle FOREIGN KEY (bundle_id) REFERENCES product_bundles(bundle_id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- payments
+--------------------------------------------------
+DROP TABLE IF EXISTS payments;
+CREATE TABLE payments (
+  payment_id BIGINT NOT NULL PRIMARY KEY,
+  order_id BIGINT,
+  payment_method VARCHAR(64),
+  amount DECIMAL(14,2),
+  payment_date DATE,
+  is_refunded TINYINT(1) DEFAULT 0,
+  refund_txn_id VARCHAR(200),
+  INDEX (order_id),
+  INDEX (payment_date),
+  CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- shipments
+--------------------------------------------------
+DROP TABLE IF EXISTS shipments;
+CREATE TABLE shipments (
+  shipment_id BIGINT NOT NULL PRIMARY KEY,
+  order_id BIGINT,
+  shipped_date DATE,
+  delivered_date DATE,
+  delivery_city VARCHAR(128),
+  shipment_status VARCHAR(40),
+  carrier VARCHAR(128),
+  tracking_number VARCHAR(200),
+  INDEX (order_id),
+  INDEX (delivered_date),
+  INDEX (shipment_status),
+  CONSTRAINT fk_shipments_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- returns
+--------------------------------------------------
+DROP TABLE IF EXISTS returns;
+CREATE TABLE returns (
+  return_id BIGINT NOT NULL PRIMARY KEY,
+  order_id BIGINT,
+  order_item_id BIGINT,
+  returned_date DATE,
+  reason_code VARCHAR(128),
+  refund_amount DECIMAL(14,2),
+  processed_by VARCHAR(128),
+  processed_at DATETIME,
+  INDEX (order_id),
+  INDEX (order_item_id),
+  CONSTRAINT fk_returns_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_returns_order_item FOREIGN KEY (order_item_id) REFERENCES order_items(order_item_id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- sessions (for attribution)
+--------------------------------------------------
+DROP TABLE IF EXISTS sessions;
+CREATE TABLE sessions (
+  session_id VARCHAR(128) NOT NULL PRIMARY KEY,
+  customer_id BIGINT NULL,
+  session_start DATETIME,
+  session_end DATETIME,
+  utm_source VARCHAR(128),
+  utm_medium VARCHAR(128),
+  campaign VARCHAR(128),
+  device VARCHAR(64),
+  ip_address VARCHAR(64),
+  user_agent TEXT,
+  INDEX (customer_id),
+  INDEX (session_start),
+  CONSTRAINT fk_sessions_customer FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--------------------------------------------------
+-- order_sessions (mapping orders to sessions)
+--------------------------------------------------
+DROP TABLE IF EXISTS order_sessions;
+CREATE TABLE order_sessions (
+  id BIGINT NOT NULL PRIMARY KEY,
+  order_id BIGINT,
+  session_id VARCHAR(128),
+  INDEX (order_id),
+  INDEX (session_id),
+  CONSTRAINT fk_order_sessions_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_order_sessions_session FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;
