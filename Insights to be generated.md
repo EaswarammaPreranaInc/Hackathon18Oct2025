@@ -22,8 +22,7 @@ Basic:
 Intermediate :
  1.	Gross vs Net revenue per month — compute both gross revenue (sum(order_value)) and net revenue after returns & refunds. Explain the assumptions you made for attribution (e.g., if return has no order_item_id, how did you match?).
  2.		Customer cohort analysis (retention) — cohort by signup month: % retained and % repeat purchasers over 3, 6, 12 months.
-
-
+ 3.		Revenue recognition comparison — compute monthly revenue by order/payment/delivered date and argue which is correct.
 
 
 
