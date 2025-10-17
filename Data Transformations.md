@@ -3,6 +3,9 @@ Normalize phone numbers - Goal: convert messy phone into canonical E.164-like +9
 
 Clean product category (product_category_raw) -> canonical product_category
 
+
+#######################################IGNORE BELOW############################################################################
+
 Derive channel from sessions / utm / user_agent - Task: orders have channel and utm_source but sometimes missing. Build a derived order_channel_final using priority:
 
     If channel present, use it.
@@ -23,14 +26,5 @@ Parse user_agent to get browser name & version (basic):
   
   ELSE 'Other' '
 
-Give each team one or two of these transformation tasks (mix easy/harder):
-
-Phone normalization + match rate — create phone_norm, compute % matched to 10-digit numbers.
-
-Category mapping — produce canonical product_category and top-5 categories by revenue both before & after mapping.
-
-Channel derivation — create order_channel_final and show revenue by derived channel; compare with raw channel.
-
-Browser parsing — create browser column and show conversion rate (orders / sessions) per browser.
 
 Revenue recognition comparison — compute monthly revenue by order/payment/delivered date and argue which is correct.
