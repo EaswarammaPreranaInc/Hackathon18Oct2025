@@ -1,4 +1,4 @@
-# Full KPI Catalogue — E-commerce Hackathon (Instructor Version)
+# Full KPI Catalogue — E-commerce Hackathon
 
 ## GMV
 **Description:** Sum of order_items.line_total for completed orders
