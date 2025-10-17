@@ -1,5 +1,5 @@
 
-Core (easy / required baseline — 2 to 3 of these)
+Basic:
 
 1.Total revenue & orders over time — compute daily/weekly/monthly revenue, number of orders, average order value (AOV). (Time series + simple visualization)
 
@@ -13,7 +13,11 @@ Core (easy / required baseline — 2 to 3 of these)
 
 6.Repeat customer contribution — % of revenue from repeat buyers vs new buyers.
 
-7.Customer cohort analysis (retention) — cohort by signup month: % retained and % repeat purchasers over 3, 6, 12 months.
+Intermediate :
+ 1.	Gross vs Net revenue per month — compute both gross revenue (sum(order_value)) and net revenue after returns & refunds. Explain the assumptions you made for attribution (e.g., if return has no order_item_id, how did you match?).
+ 2.		
+
+Customer cohort analysis (retention) — cohort by signup month: % retained and % repeat purchasers over 3, 6, 12 months.
 
 
 
