@@ -28,4 +28,3 @@ Parse user_agent to get browser name & version (basic):
   ELSE 'Other' '
 
 
-Revenue recognition comparison — compute monthly revenue by order/payment/delivered date and argue which is correct.
