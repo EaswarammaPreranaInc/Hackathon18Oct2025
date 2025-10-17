@@ -4,6 +4,7 @@ Normalize phone numbers - Goal: convert messy phone into canonical E.164-like +9
 Clean product category (product_category_raw) -> canonical product_category
 
 
+##############################################################################################################################
 #######################################IGNORE BELOW############################################################################
 
 Derive channel from sessions / utm / user_agent - Task: orders have channel and utm_source but sometimes missing. Build a derived order_channel_final using priority:
