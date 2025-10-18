@@ -31,37 +31,37 @@ Parse user_agent to get browser name & version (basic):
   Code to transform the product category
 
   # Define a function to clean and standardize category names
-def clean_category(value):
-    if not isinstance(value, str):
-        return 'Unknown'
+    def clean_category(value):
+        if not isinstance(value, str):
+            return 'Unknown'
+        
+        # Basic normalization
+        val = value.strip().lower()
+        val = re.sub(r'[^a-z]', '', val)  # remove non-alphabetic characters
     
-    # Basic normalization
-    val = value.strip().lower()
-    val = re.sub(r'[^a-z]', '', val)  # remove non-alphabetic characters
-
-    # Mapping logic
-    if 'apparel' in val or 'apprel' in val:
-        return 'Apparel'
-    elif 'beauty' in val or 'care' in val:
-        return 'Beauty'
-    elif 'book' in val:
-        return 'Books'
-    elif 'electronic' in val or 'electronix' in val or 'elec' in val:
-        return 'Electronics'
-    elif 'grocery' in val or 'gr0cery' in val:
-        return 'Grocery'
-    elif 'home' in val:
-        return 'Home'
-    elif 'sport' in val:
-        return 'Sports'
-    elif 'toy' in val:
-        return 'Toys'
-    else:
-        return 'Other'
+        # Mapping logic
+        if 'apparel' in val or 'apprel' in val:
+            return 'Apparel'
+        elif 'beauty' in val or 'care' in val:
+            return 'Beauty'
+        elif 'book' in val:
+            return 'Books'
+        elif 'electronic' in val or 'electronix' in val or 'elec' in val:
+            return 'Electronics'
+        elif 'grocery' in val or 'gr0cery' in val:
+            return 'Grocery'
+        elif 'home' in val:
+            return 'Home'
+        elif 'sport' in val:
+            return 'Sports'
+        elif 'toy' in val:
+            return 'Toys'
+        else:
+            return 'Other'
 
 # Apply the transformation
-df['product_category_clean'] = df['product_category_raw'].apply(clean_category)
-
+    df['product_category_clean'] = df['product_category_raw'].apply(clean_category)
+    
 
 Phone number transformation 
 
